@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Burmese Flashcards</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink:   #ff6b9d;
+    --orange: #ff9f43;
+    --yellow: #ffd93d;
+    --green:  #6bcb77;
+    --blue:   #4d96ff;
+    --purple: #c77dff;
+    --bg:     #fff9f0;
+    --n-color: #ff6b9d;
+    --h-color: #4d96ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: 'Nunito', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+    overflow-x: hidden;
+  }
+
+  .blob {
+    position: fixed; border-radius: 50%;
+    filter: blur(60px); opacity: 0.15; pointer-events: none;
+    animation: blobFloat 8s ease-in-out infinite alternate;
+  }
+  .blob1 { width:320px;height:320px;background:var(--pink);top:-80px;left:-80px; }
+  .blob2 { width:280px;height:280px;background:var(--blue);bottom:-60px;right:-60px;animation-delay:2s; }
+  .blob3 { width:200px;height:200px;background:var(--yellow);top:40%;left:60%;animation-delay:4s; }
+
+  @keyframes blobFloat {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(20px,20px) scale(1.08); }
+  }
+
+  .header {
+    text-align: center; margin-bottom: 14px;
+    animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.7rem,5vw,2.6rem);
+    background: linear-gradient(135deg, var(--pink), var(--orange), var(--yellow));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .header p { font-size:0.75rem;color:#ccc;font-weight:700;letter-spacing:0.1em;text-transform:uppercase; }
+
+  /* Mode switcher */
+  .mode-switcher {
+    display: flex;
+    background: white;
+    border-radius: 999px;
+    padding: 5px;
+    gap: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.09);
+    margin-bottom: 18px;
+    animation: popIn 0.6s 0.08s cubic-bezier(0.34,1.56,0.64,1) both;
+    opacity: 0;
+  }
+
+  .mode-btn {
+    padding: 8px 20px;
+    border-radius: 999px;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    color: #bbb;
+    background: transparent;
+    letter-spacing: 0.04em;
+  }
+
+  .mode-btn:hover { color: #888; }
+
+  .mode-btn.active-together {
+    background: linear-gradient(135deg, var(--pink), var(--blue));
+    color: white;
+    box-shadow: 0 3px 12px rgba(255,107,157,0.3);
+  }
+
+  .mode-btn.active-naaila {
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    color: white;
+    box-shadow: 0 3px 12px rgba(255,107,157,0.35);
+  }
+
+  .mode-btn.active-henna {
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: white;
+    box-shadow: 0 3px 12px rgba(77,150,255,0.35);
+  }
+
+  /* Scoreboard */
+  .scoreboard {
+    display: flex; gap: 12px; margin-bottom: 16px;
+    animation: popIn 0.6s 0.1s cubic-bezier(0.34,1.56,0.64,1) both;
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+
+  .player-card {
+    display: flex; flex-direction: column; align-items: center;
+    background: white; border-radius: 18px; padding: 10px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border: 3px solid transparent;
+    transition: all 0.3s ease;
+    min-width: 100px;
+    opacity: 0.4;
+  }
+
+  .player-card.naaila { border-color: var(--n-color); }
+  .player-card.henna  { border-color: var(--h-color); }
+  .player-card.active-player { opacity: 1; transform: translateY(-3px); }
+  .player-card.naaila.active-player { box-shadow: 0 6px 20px rgba(255,107,157,0.3); }
+  .player-card.henna.active-player  { box-shadow: 0 6px 20px rgba(77,150,255,0.3); }
+
+  .player-name { font-family:'Fredoka One',cursive; font-size:0.95rem; margin-bottom:2px; }
+  .player-card.naaila .player-name { color:var(--n-color); }
+  .player-card.henna  .player-name { color:var(--h-color); }
+  .player-score { font-family:'Fredoka One',cursive; font-size:1.5rem; color:#333; line-height:1; }
+  .player-sub { font-size:0.6rem; font-weight:700; color:#ccc; letter-spacing:0.1em; }
+
+  /* Tabs */
+  .tabs {
+    display:flex; flex-wrap:wrap; gap:7px; justify-content:center;
+    margin-bottom:16px; width:min(540px,100%);
+    animation: slideUp 0.5s 0.15s ease both; opacity:0;
+  }
+  .tab {
+    padding:7px 15px; border-radius:999px; border:2.5px solid transparent;
+    background:white; color:#bbb; font-family:'Nunito',sans-serif;
+    font-size:0.7rem; font-weight:800; cursor:pointer; transition:all 0.2s ease;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06);
+  }
+  .tab:hover { transform:translateY(-2px); }
+  .tab[data-cat="All"]       { --tc:var(--pink); }
+  .tab[data-cat="Greetings"] { --tc:var(--orange); }
+  .tab[data-cat="Nouns"]     { --tc:var(--green); }
+  .tab[data-cat="Verbs"]     { --tc:var(--blue); }
+  .tab[data-cat="Phrases"]   { --tc:var(--purple); }
+  .tab[data-cat="Tenses"]    { --tc:var(--yellow); }
+  .tab.active { background:var(--tc); color:white; border-color:var(--tc); transform:translateY(-2px); }
+
+  /* Progress */
+  .progress-wrap {
+    width:min(480px,100%); height:10px; background:#ede8e0;
+    border-radius:999px; margin-bottom:6px; overflow:hidden;
+    animation: slideUp 0.5s 0.2s ease both; opacity:0;
+  }
+  .progress-bar { height:100%; background:linear-gradient(90deg,var(--pink),var(--orange)); border-radius:999px; transition:width 0.4s ease; }
+  .counter { font-size:0.7rem; color:#ccc; font-weight:700; letter-spacing:0.1em; margin-bottom:14px; text-align:center; animation: slideUp 0.5s 0.22s ease both; opacity:0; }
+
+  /* Card */
+  .scene {
+    width:min(480px,100%); height:210px; perspective:1000px; cursor:pointer;
+    animation: popIn 0.5s 0.25s cubic-bezier(0.34,1.56,0.64,1) both; opacity:0;
+  }
+  .card { width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1); }
+  .card.flipped { transform:rotateY(180deg); }
+
+  .face {
+    position:absolute;inset:0;border-radius:24px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    padding:24px 28px;gap:8px;
+  }
+  .face.front {
+    background:white;
+    box-shadow:0 8px 32px rgba(0,0,0,0.09),0 2px 8px rgba(0,0,0,0.05);
+    border:2.5px solid #f0ebe0;overflow:hidden;
+  }
+  .face.front::before {
+    content:'';position:absolute;top:0;left:0;right:0;height:6px;
+    background:var(--card-color,linear-gradient(90deg,var(--pink),var(--orange)));
+    border-radius:24px 24px 0 0;
+  }
+  .face.back { transform:rotateY(180deg);box-shadow:0 8px 32px rgba(0,0,0,0.14);border-radius:24px; }
+
+  .cat-badge { font-size:0.6rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;padding:3px 12px;border-radius:999px;background:#f5f0e8;color:#bbb; }
+  .face.back .cat-badge { background:rgba(255,255,255,0.25);color:rgba(255,255,255,0.85); }
+
+  .word { font-family:'Fredoka One',cursive;font-size:clamp(1.5rem,5vw,2.2rem);color:#333;text-align:center;line-height:1.2; }
+  .face.back .word { color:white; }
+  .subtext { font-size:0.7rem;color:#ccc;text-align:center;font-weight:600; }
+  .face.back .subtext { color:rgba(255,255,255,0.7); }
+  .tap-hint { font-size:0.6rem;color:#d0c8be;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;animation:pulse 2s ease infinite; }
+
+  /* Buttons */
+  .controls { display:flex;gap:10px;margin-top:16px;animation: slideUp 0.5s 0.32s ease both;opacity:0;flex-wrap:wrap;justify-content:center; }
+  .btn { padding:10px 22px;border-radius:999px;border:none;font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:800;cursor:pointer;transition:all 0.18s ease; }
+  .btn:active { transform:scale(0.95); }
+  .btn-nav { background:white;color:#bbb;box-shadow:0 2px 10px rgba(0,0,0,0.07); }
+  .btn-nav:hover { color:#888;transform:translateY(-1px); }
+  .btn-reveal { background:linear-gradient(135deg,var(--pink),var(--orange));color:white;box-shadow:0 4px 16px rgba(255,107,157,0.4); }
+  .btn-reveal:hover { transform:translateY(-2px); }
+
+  /* Result buttons */
+  .result-section { margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:10px;animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;width:min(480px,100%); }
+  .turn-label { font-size:0.72rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#ccc; }
+  .player-btns { display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%; }
+  .player-result-group { display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:130px; }
+  .player-result-name { font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase; }
+  .player-result-name.naaila { color:var(--n-color); }
+  .player-result-name.henna  { color:var(--h-color); }
+  .result-pair { display:flex;gap:6px; }
+  .btn-got,.btn-miss { padding:9px 18px;border-radius:999px;border:none;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:800;cursor:pointer;transition:all 0.18s ease; }
+  .btn-got  { background:linear-gradient(135deg,#6bcb77,#4db86a);color:white;box-shadow:0 3px 12px rgba(107,203,119,0.35); }
+  .btn-miss { background:linear-gradient(135deg,#ff6b6b,#ee5a5a);color:white;box-shadow:0 3px 12px rgba(255,107,107,0.3); }
+  .btn-got:hover,.btn-miss:hover { transform:translateY(-2px); }
+  .divider { width:1px;background:#ede8e0;align-self:stretch;margin:0 4px; }
+
+  /* Summary */
+  .summary { text-align:center;animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;padding:12px;width:min(480px,100%); }
+  .confetti-emoji { font-size:2rem;letter-spacing:6px;display:block;margin-bottom:10px;animation:wiggle 0.6s ease infinite alternate; }
+  .summary h2 { font-family:'Fredoka One',cursive;font-size:1.8rem;color:#444;margin-bottom:14px; }
+  .score-grid { display:flex;gap:16px;justify-content:center;margin-bottom:18px;flex-wrap:wrap; }
+  .score-box { background:white;border-radius:20px;padding:16px 24px;box-shadow:0 4px 16px rgba(0,0,0,0.08);min-width:110px;border:3px solid transparent; }
+  .score-box.naaila { border-color:var(--n-color); }
+  .score-box.henna  { border-color:var(--h-color); }
+  .score-box-name { font-family:'Fredoka One',cursive;font-size:1rem;margin-bottom:4px; }
+  .score-box.naaila .score-box-name { color:var(--n-color); }
+  .score-box.henna  .score-box-name { color:var(--h-color); }
+  .score-big { font-family:'Fredoka One',cursive;font-size:2.2rem;color:#333;line-height:1; }
+  .score-sub { font-size:0.65rem;font-weight:700;color:#bbb;letter-spacing:0.1em;margin-top:2px; }
+  .winner-msg { font-size:0.82rem;color:#888;font-weight:700;margin-bottom:20px;line-height:1.9; }
+
+  @keyframes popIn  { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
+  @keyframes slideUp{ from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse  { 0%,100%{opacity:0.4} 50%{opacity:1} }
+  @keyframes wiggle { from{transform:rotate(-5deg)} to{transform:rotate(5deg)} }
+</style>
+</head>
+<body>
+
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div class="blob blob3"></div>
+
+<div class="header">
+  <h1>Burmese Flashcards ✨</h1>
+  <p>Naaila & Henna's Study Session</p>
+</div>
+
+<!-- Mode switcher -->
+<div class="mode-switcher">
+  <button class="mode-btn active-together" id="btn-together" onclick="setMode('together')">👭 Together</button>
+  <button class="mode-btn" id="btn-naaila"  onclick="setMode('naaila')">💗 Naaila</button>
+  <button class="mode-btn" id="btn-henna"   onclick="setMode('henna')">💙 Henna</button>
+</div>
+
+<!-- Scoreboard -->
+<div class="scoreboard" id="scoreboard">
+  <div class="player-card naaila active-player" id="card-naaila">
+    <div class="player-name">Naaila 💗</div>
+    <div class="player-score" id="score-naaila">0</div>
+    <div class="player-sub" id="sub-naaila">0 correct</div>
+  </div>
+  <div class="player-card henna" id="card-henna">
+    <div class="player-name">Henna 💙</div>
+    <div class="player-score" id="score-henna">0</div>
+    <div class="player-sub" id="sub-henna">0 correct</div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+<div class="counter" id="counter"></div>
+<div id="mainArea"></div>
+
+<script>
+const catColors = {
+  "All":       "linear-gradient(135deg,#ff6b9d,#ff9f43)",
+  "Greetings": "linear-gradient(135deg,#ff9f43,#ffd93d)",
+  "Nouns":     "linear-gradient(135deg,#6bcb77,#4db86a)",
+  "Verbs":     "linear-gradient(135deg,#4d96ff,#6bcb77)",
+  "Phrases":   "linear-gradient(135deg,#c77dff,#ff6b9d)",
+  "Tenses":    "linear-gradient(135deg,#ffd93d,#ff9f43)",
+};
+
+const allCards = {
+  "Greetings": [
+    {front:"Mingalabar",back:"Hello!",note:"Standard greeting 👋"},
+    {front:"Nay kaun la",back:"How are you?",note:""},
+    {front:"Kaun ba dae",back:"I'm fine",note:""},
+    {front:"Sar pi bi la",back:"Have you eaten?",note:"r is silent 🍽️"},
+    {front:"Sar pi bar bi",back:"I have eaten",note:"present perfect ✅"},
+    {front:"Kyay zu bar",back:"Thank you",note:"🙏"},
+    {front:"Thwa bi naw",back:"Goodbye",note:"👋"},
+    {front:"Nout ma tway mae",back:"See you later",note:""},
+    {front:"Bar sar lae",back:"What did you eat?",note:"🍜"},
+  ],
+  "Nouns": [
+    {front:"Sar oe",back:"Book",note:"📖"},
+    {front:"Noe",back:"Milk",note:"🥛"},
+    {front:"La phat yay",back:"Tea",note:"🍵"},
+    {front:"Yay",back:"Water",note:"💧"},
+    {front:"Kyat tha",back:"Chicken",note:"🐔"},
+    {front:"Ta min",back:"Rice",note:"🍚"},
+    {front:"Zay",back:"Market",note:"🛒"},
+    {front:"Nae nae",back:"A little",note:"🤏"},
+    {front:"Ta yat thi",back:"Mango",note:"🥭"},
+    {front:"A tu tu bae",back:"Me too",note:"😄"},
+    {front:"Ma nay ga",back:"Yesterday",note:"📅 time word"},
+    {front:"Mohinga",back:"Fish noodle soup",note:"🍜 national dish!"},
+  ],
+  "Verbs": [
+    {front:"Sar",back:"To eat",note:"🍽️"},
+    {front:"Twa",back:"To go",note:"🚶"},
+    {front:"Tout",back:"To drink",note:"🥤"},
+    {front:"Ji(t)e",back:"To like",note:"❤️"},
+    {front:"Cha(t)",back:"To cook",note:"👨‍🍳"},
+    {front:"Pat",back:"To read",note:"📖"},
+    {front:"Pyaw",back:"To speak",note:"💬"},
+  ],
+  "Phrases": [
+    {front:"Cha ma mohinga sar dae",back:"I eat mohinga",note:"present tense 🍜"},
+    {front:"Ma sar bu",back:"I don't eat",note:"negative ❌"},
+    {front:"India ma twa bu",back:"I don't go to India",note:"negative ❌"},
+    {front:"Kyat tha ma jite bu",back:"I don't like chicken",note:"negative ❌"},
+    {front:"Kyat tha sar lar",back:"Do you eat chicken?",note:"yes/no question ❓"},
+    {front:"Kyat tha chat lar",back:"Do you cook chicken?",note:"yes/no question ❓"},
+    {front:"Kyat sar khae lae",back:"Did you eat chicken?",note:"past yes/no ❓"},
+    {front:"La phat yay ji(t)e lar",back:"Do you like tea?",note:"yes/no question ❓"},
+    {front:"Sar oe ji(t)e lar",back:"Do you like books?",note:"yes/no question ❓"},
+  ],
+  "Tenses": [
+    {front:"Verb + dae",back:"Present tense",note:"e.g. sar dae = I eat"},
+    {front:"Verb + kae dae",back:"Past tense",note:"any time in the past ⏮️"},
+    {front:"Verb + mae",back:"Future tense",note:"e.g. twa mae = will go ⏭️"},
+    {front:"Verb + nay dae",back:"Present continuous",note:"currently doing 🔄"},
+    {front:"Verb + pi: bi",back:"Present perfect",note:"completed action ✅"},
+    {front:"Hote dae",back:"Yes",note:"affirmative ✅"},
+    {front:"Ma hote bu",back:"No",note:"negative ❌"},
+  ],
+};
+
+const categories = Object.keys(allCards);
+let activeCategory = "All";
+let deck = [];
+let current = 0, flipped = false;
+let mode = "together"; // "together" | "naaila" | "henna"
+
+const players = {
+  naaila: { correct:0, total:0 },
+  henna:  { correct:0, total:0 },
+};
+let responded = {};
+
+function getActiveDeck() {
+  return activeCategory === "All"
+    ? Object.values(allCards).flat()
+    : (allCards[activeCategory] || []);
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function getCat(card) {
+  for (const [cat,cards] of Object.entries(allCards)) {
+    if (cards.some(c => c.front === card.front)) return cat;
+  }
+  return activeCategory;
+}
+
+function getColor(card) {
+  const cat = activeCategory === "All" ? getCat(card) : activeCategory;
+  return catColors[cat] || catColors["All"];
+}
+
+function setMode(m) {
+  mode = m;
+  current = 0; responded = {};
+  players.naaila.correct = 0; players.naaila.total = 0;
+  players.henna.correct  = 0; players.henna.total  = 0;
+  deck = shuffle(getActiveDeck());
+
+  // Update mode buttons
+  ["together","naaila","henna"].forEach(x => {
+    const btn = document.getElementById(`btn-${x}`);
+    btn.className = "mode-btn" + (m === x ? ` active-${x}` : "");
+  });
+
+  // Show/hide scoreboard cards
+  const cardN = document.getElementById('card-naaila');
+  const cardH = document.getElementById('card-henna');
+  if (m === "naaila") {
+    cardN.classList.add('active-player'); cardH.classList.remove('active-player');
+  } else if (m === "henna") {
+    cardH.classList.add('active-player'); cardN.classList.remove('active-player');
+  } else {
+    cardN.classList.add('active-player'); cardH.classList.add('active-player');
+  }
+
+  updateScoreboard();
+  renderCard();
+}
+
+function updateScoreboard() {
+  ["naaila","henna"].forEach(name => {
+    document.getElementById(`score-${name}`).textContent = players[name].correct;
+    document.getElementById(`sub-${name}`).textContent = `${players[name].correct} correct`;
+  });
+}
+
+function buildTabs() {
+  const el = document.getElementById('tabs');
+  const all = ['All',...categories];
+  el.innerHTML = all.map(c =>
+    `<button class="tab${activeCategory===c?' active':''}" data-cat="${c}" onclick="selectCat('${c}')">${c}</button>`
+  ).join('');
+}
+
+function selectCat(cat) {
+  activeCategory = cat;
+  current = 0; responded = {};
+  players.naaila.correct = 0; players.naaila.total = 0;
+  players.henna.correct  = 0; players.henna.total  = 0;
+  deck = shuffle(getActiveDeck());
+  buildTabs();
+  updateScoreboard();
+  renderCard();
+}
+
+function updateProgress() {
+  const pct = deck.length ? (current/deck.length)*100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('counter').textContent = deck.length ? `${current} / ${deck.length}` : '';
+}
+
+function renderCard() {
+  flipped = false;
+  updateProgress();
+  if (!deck.length) {
+    document.getElementById('mainArea').innerHTML = `<p style="color:#ccc;font-weight:700;">No cards here!</p>`;
+    return;
+  }
+  const card = deck[current];
+  const color = getColor(card);
+  const cat = activeCategory === "All" ? getCat(card) : activeCategory;
+
+  document.getElementById('mainArea').innerHTML = `
+    <div class="scene" id="scene" onclick="flipCard()">
+      <div class="card" id="card">
+        <div class="face front" style="--card-color:${color}">
+          <span class="cat-badge">${cat}</span>
+          <div class="word">${card.front}</div>
+          <div class="tap-hint">tap to flip ✨</div>
+        </div>
+        <div class="face back" style="background:${color}">
+          <span class="cat-badge">${cat}</span>
+          <div class="word">${card.back}</div>
+          ${card.note ? `<div class="subtext">${card.note}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div id="actionArea">
+      <div class="controls">
+        <button class="btn btn-nav" onclick="event.stopPropagation();prevCard()">← Back</button>
+        <button class="btn btn-reveal" onclick="event.stopPropagation();flipCard()">Reveal!</button>
+        <button class="btn btn-nav" onclick="event.stopPropagation();nextCard()">Skip →</button>
+      </div>
+    </div>
+  `;
+}
+
+function flipCard() {
+  if (flipped) return;
+  flipped = true;
+  document.getElementById('card').classList.add('flipped');
+  document.getElementById('scene').onclick = null;
+
+  if (mode === "together") {
+    // Both players mark themselves
+    document.getElementById('actionArea').innerHTML = `
+      <div class="result-section">
+        <div class="turn-label">How did each of you do?</div>
+        <div class="player-btns">
+          <div class="player-result-group">
+            <div class="player-result-name naaila">Naaila 💗</div>
+            <div class="result-pair">
+              <button class="btn-got"  onclick="mark('naaila',true)">✓ Got it</button>
+              <button class="btn-miss" onclick="mark('naaila',false)">✗ Missed</button>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div class="player-result-group">
+            <div class="player-result-name henna">Henna 💙</div>
+            <div class="result-pair">
+              <button class="btn-got"  onclick="mark('henna',true)">✓ Got it</button>
+              <button class="btn-miss" onclick="mark('henna',false)">✗ Missed</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    // Solo mode -- only one player
+    const p = mode;
+    const label = p === "naaila" ? "Naaila 💗" : "Henna 💙";
+    document.getElementById('actionArea').innerHTML = `
+      <div class="result-section">
+        <div class="player-btns">
+          <div class="player-result-group">
+            <div class="player-result-name ${p}">${label}</div>
+            <div class="result-pair">
+              <button class="btn-got"  onclick="mark('${p}',true)">✓ Got it!</button>
+              <button class="btn-miss" onclick="mark('${p}',false)">✗ Missed it</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function mark(player, got) {
+  responded[player] = got;
+  if (got) players[player].correct++;
+  players[player].total++;
+  updateScoreboard();
+
+  // Disable that player's buttons visually
+  document.querySelectorAll('.player-result-group').forEach(group => {
+    const nameEl = group.querySelector('.player-result-name');
+    if (nameEl && nameEl.classList.contains(player)) {
+      group.querySelectorAll('button').forEach(b => { b.style.opacity='0.4'; b.style.pointerEvents='none'; });
+      const icon = document.createElement('div');
+      icon.style.cssText = 'font-size:1.4rem;margin-top:4px;';
+      icon.textContent = got ? '✅' : '❌';
+      group.appendChild(icon);
+    }
+  });
+
+  // Determine if we should advance
+  const needed = mode === "together" ? ["naaila","henna"] : [mode];
+  if (needed.every(n => responded[n] !== undefined)) {
+    responded = {};
+    setTimeout(() => {
+      current++;
+      if (current >= deck.length) showSummary();
+      else renderCard();
+    }, 700);
+  }
+}
+
+function nextCard() { responded={}; current++; if(current>=deck.length) showSummary(); else renderCard(); }
+function prevCard() { if(current>0){responded={};current--;renderCard();} }
+
+function showSummary() {
+  updateProgress();
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('counter').textContent = `${deck.length} / ${deck.length}`;
+
+  const total = deck.length;
+
+  if (mode === "together") {
+    const ns = players.naaila.correct;
+    const hs = players.henna.correct;
+    const winnerMsg = ns > hs ? "🏆 Naaila wins this round!" : hs > ns ? "🏆 Henna wins this round!" : "🤝 It's a tie! Great studying!";
+    document.getElementById('mainArea').innerHTML = `
+      <div class="summary">
+        <span class="confetti-emoji">🎉🌟🎊</span>
+        <h2>Round Complete!</h2>
+        <div class="score-grid">
+          <div class="score-box naaila">
+            <div class="score-box-name">Naaila 💗</div>
+            <div class="score-big">${ns}/${total}</div>
+            <div class="score-sub">${Math.round(ns/total*100)}% correct</div>
+          </div>
+          <div class="score-box henna">
+            <div class="score-box-name">Henna 💙</div>
+            <div class="score-big">${hs}/${total}</div>
+            <div class="score-sub">${Math.round(hs/total*100)}% correct</div>
+          </div>
+        </div>
+        <div class="winner-msg">${winnerMsg}</div>
+        <button class="btn btn-reveal" onclick="restart()" style="font-size:0.9rem;padding:13px 30px;">Play Again!</button>
+      </div>
+    `;
+  } else {
+    const p = mode;
+    const label = p === "naaila" ? "Naaila 💗" : "Henna 💙";
+    const sc = players[p].correct;
+    const pct = Math.round(sc/total*100);
+    const [emoji, msg] = pct>=80 ? ["🎉🌟","Amazing work!"] : pct>=50 ? ["👏💪","Good effort -- keep going!"] : ["🌱💛","Keep practicing -- you've got this!"];
+    document.getElementById('mainArea').innerHTML = `
+      <div class="summary">
+        <span class="confetti-emoji">${emoji}</span>
+        <h2>Round Complete!</h2>
+        <div class="score-grid">
+          <div class="score-box ${p}">
+            <div class="score-box-name">${label}</div>
+            <div class="score-big">${sc}/${total}</div>
+            <div class="score-sub">${pct}% correct</div>
+          </div>
+        </div>
+        <div class="winner-msg">${msg}</div>
+        <button class="btn btn-reveal" onclick="restart()" style="font-size:0.9rem;padding:13px 30px;">Go Again!</button>
+      </div>
+    `;
+  }
+}
+
+function restart() {
+  current=0; responded={};
+  players.naaila.correct=0; players.naaila.total=0;
+  players.henna.correct=0;  players.henna.total=0;
+  deck=shuffle(getActiveDeck());
+  updateScoreboard();
+  renderCard();
+}
+
+// Init
+deck = shuffle(getActiveDeck());
+buildTabs();
+updateScoreboard();
+renderCard();
+</script>
+</body>
+</html>
